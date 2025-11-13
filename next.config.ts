@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'notehub-api.goit.study' },
     ],
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 };
 
 export default nextConfig;
