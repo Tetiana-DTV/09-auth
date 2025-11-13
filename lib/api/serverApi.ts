@@ -1,0 +1,95 @@
+import { cookies } from 'next/headers';
+import { isAxiosError } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import api from './api';
+import type { Note } from '@/types/note';
+import type { User } from '@/types/user';
+import type { FetchNotesParams, FetchNotesResponse } from './clientApi';
+import type { NoteCategory } from './clientApi';
+
+const UNAUTHORIZED_STATUSES = new Set([401, 403]);
+
+async function withCookiesConfig(): Promise<AxiosRequestConfig> {
+  try {
+    const cookieStore = await cookies();
+    const cookieHeader = cookieStore.toString();
+
+    if (!cookieHeader) {
+      return {};
+    }
+
+    return {
+      headers: {
+        Cookie: cookieHeader,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
+
+export async function getServerMe(): Promise<User | null> {
+  try {
+    const { data } = await api.get<User>('/users/me', await withCookiesConfig());
+    if (!data || Object.keys(data).length === 0) {
+      return null;
+    }
+    return data;
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status && UNAUTHORIZED_STATUSES.has(error.response.status)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export { getServerMe as getMe };
+
+export async function fetchNotesServer(
+  params: FetchNotesParams = {}
+): Promise<FetchNotesResponse> {
+  const cookieConfig = await withCookiesConfig();
+  const { data } = await api.get<FetchNotesResponse>('/notes', {
+    ...cookieConfig,
+    params,
+  });
+  return data;
+}
+
+export async function fetchNoteByIdServer(id: string): Promise<Note> {
+  const { data } = await api.get<Note>(`/notes/${id}`, await withCookiesConfig());
+  return data;
+}
+
+export async function checkSessionServer(): Promise<AxiosResponse<User | null>> {
+  return api.get<User | null>('/auth/session', await withCookiesConfig());
+}
+
+export async function getCategoriesServer(): Promise<NoteCategory[]> {
+  try {
+    const { data } = await api.get<NoteCategory[] | string[]>(
+      '/notes/categories',
+      await withCookiesConfig()
+    );
+
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
+      return (data as string[]).map((name, index) => ({ id: `${index}`, name }));
+    }
+
+    if (Array.isArray(data)) {
+      return data as NoteCategory[];
+    }
+
+    return [];
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const status = error.response?.status;
+
+      if (!status || UNAUTHORIZED_STATUSES.has(status) || status === 404) {
+        return [];
+      }
+    }
+
+    throw error;
+  }
+}
