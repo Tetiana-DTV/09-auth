@@ -1,123 +1,93 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import styles from '@/app/styles/EditProfilePage.module.css';
-import { getUser, updateUser } from '@/lib/api/clientApi';
-import { useAuthStore } from '@/lib/store/authStore';
-import { getErrorMessage } from '@/lib/errors';
 
-export default function EditProfilePage() {
-  const router = useRouter();
-  const { user, setUser } = useAuthStore();
-  const [username, setUsername] = useState(user?.username ?? '');
-  const [email, setEmail] = useState(user?.email ?? 'user_email@example.com');
-  const [avatar, setAvatar] = useState(user?.avatar ?? '/icon.svg');
-  const [error, setError] = useState<string | null>(null);
+import { useState, useEffect } from "react"
+import { getMe } from "@/lib/api/clientApi"
+import css from './EditProfilePage.module.css'
+import Image from "next/image"
+import { updateMe } from "@/lib/api/clientApi"
+import { useRouter } from "next/navigation"
+import { useAuthStore } from "@/lib/store/authStore"
 
-  useEffect(() => {
-    let cancelled = false;
 
-    async function ensureProfile() {
-      if (user) {
-        setUsername(user.username);
-        setEmail(user.email);
-        setAvatar(user.avatar ?? '/icon.svg');
-        return;
-      }
 
-      try {
-        const freshUser = await getUser();
-        if (cancelled) {
-          return;
+const EditPage = () => {
+
+    const router = useRouter()
+
+    const setUser = useAuthStore((state) => state.setUser)
+
+    const [userNameValue, setUserNameValue] = useState('')
+    const [emailValue, setEmailValue] = useState('')
+    const [avatar, setAvatar] = useState('')
+
+    useEffect(() => {
+        getMe().then((user) => {
+            setUserNameValue(user.username)
+            setEmailValue(user.email)
+            setAvatar(user.avatar)
+        })
+    }, [])
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setUserNameValue(event.target.value);
+    };
+
+    const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        try {
+            const updated = await updateMe({ username: userNameValue })
+            setUser(updated)
+            router.push('/profile')
+
+
+        } catch {
+
         }
-        setUser(freshUser);
-        setUsername(freshUser.username);
-        setEmail(freshUser.email);
-        setAvatar(freshUser.avatar ?? '/icon.svg');
-      } catch {
-        // ignore fetch error; AuthProvider/middleware will handle auth state
-      }
+    }
+    const handleClose = () => {
+        router.push('/profile')
     }
 
-    ensureProfile();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [setUser, user]);
+    return (
+        <main className={css.mainContent}>
+            <div className={css.profileCard}>
+                <h1 className={css.formTitle}>Edit Profile</h1>
 
-  const updateProfileMutation = useMutation({
-    mutationFn: () => updateUser({ username: username.trim() }),
-    onSuccess: (updatedUser) => {
-      setUser(updatedUser);
-      router.push('/profile');
-      router.refresh();
-    },
-    onError: (err: unknown) => {
-      setError(getErrorMessage(err, 'Update failed'));
-    },
-  });
+                {avatar && <Image src={avatar}
+                    alt="User Avatar"
+                    width={120}
+                    height={120}
+                    className={css.avatar}
+                />}
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    updateProfileMutation.mutate();
-  }
 
-  function handleCancel() {
-    router.push('/profile');
-  }
+                <form className={css.profileInfo} onSubmit={handleSave}>
+                    <div className={css.usernameWrapper}>
+                        <label htmlFor="username">Username:</label>
+                        <input id="username"
+                            type="text"
+                            className={css.input}
+                            value={userNameValue ?? ''}
+                            onChange={handleChange}
+                        />
+                    </div>
 
-  return (
-    <main className={styles.mainContent}>
-      <div className={styles.profileCard}>
-        <h1 className={styles.formTitle}>Edit Profile</h1>
+                    <p>Email: {emailValue ?? ''}</p>
 
-        <Image src={avatar} alt="User Avatar" width={120} height={120} className={styles.avatar} />
+                    <div className={css.actions}>
+                        <button type="submit" className={css.saveButton}>
+                            Save
+                        </button>
+                        <button type="button" className={css.cancelButton} onClick={handleClose}>
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
 
-        <form className={styles.profileInfo} onSubmit={handleSubmit}>
-          <div className={styles.usernameWrapper}>
-            <label htmlFor="username">Username:</label>
-            <input
-              id="username"
-              type="text"
-              className={styles.input}
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              required
-            />
-          </div>
-
-          <p>Email: {email}</p>
-
-          <div className={styles.actions}>
-            <button
-              type="submit"
-              className={styles.saveButton}
-              disabled={updateProfileMutation.isPending}
-            >
-              {updateProfileMutation.isPending ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              type="button"
-              className={styles.cancelButton}
-              onClick={handleCancel}
-              disabled={updateProfileMutation.isPending}
-            >
-              Cancel
-            </button>
-          </div>
-
-          {error && (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          )}
-        </form>
-      </div>
-    </main>
-  );
+    )
 }
+export default EditPage

@@ -1,8 +1,28 @@
+// app/(public routes)/layout.tsx
+
 'use client';
-import React from 'react';
+
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-export default function AuthRoutesLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  React.useEffect(() => { router.refresh(); }, [router]);
-  return <>{children}</>;
+
+type Props = {
+    children: React.ReactNode;
+};
+
+export default function PublicLayout({ children }: Props) {
+    const [loading, setLoading] = useState(true);
+
+    const router = useRouter();
+
+    useEffect(() => {
+        const refreshAndStopLoading = async () => {
+            await router.refresh();  // чекаємо завершення
+            setLoading(false);       // тепер без каскаду
+        };
+
+        refreshAndStopLoading();
+    }, [router]);
+
+
+    return <>{loading ? <div>Loading...</div> : children}</>;
 }

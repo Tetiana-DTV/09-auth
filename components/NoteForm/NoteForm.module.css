@@ -1,95 +1,84 @@
 .form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
-/* Field wrapper used for each label+control pair */
-.field {
+.formGroup {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-
-/* Label */
-.label {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     color: #212529;
 }
 
-/* Inputs / Textarea / Select — unified look */
 .input,
 .textarea,
 .select {
-    width: 100%;
-    box-sizing: border-box;
+    margin-top: 6px;
     padding: 10px 12px;
     font-size: 14px;
-    line-height: 1.4;
-    color: #212529;
-    background-color: #ffffff;
     border: 1px solid #ced4da;
-    border-radius: 8px;
-    outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.input:focus,
-.textarea:focus,
-.select:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-}
-
-/* Textarea specifics */
 .textarea {
-    min-height: 120px;
+    min-height: 150px;
     resize: vertical;
 }
 
-/* Actions row */
+.select {
+    height: 38px;
+    background-color: #fff;
+}
+
 .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 8px;
 }
 
-/* Buttons */
 .submitButton {
-    padding: 10px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #ffffff;
+    padding: 8px 16px;
+    font-size: 16px;
     background-color: #0d6efd;
-    border: 1px solid #0d6efd;
-    border-radius: 8px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
-.submitButton:hover:not([disabled]) {
+.submitButton:hover {
     background-color: #0b5ed7;
 }
 
 .submitButton:disabled {
-    opacity: 0.7;
-    cursor: default;
+    background-color: #6c757d;
+    cursor: not-allowed;
 }
 
 .cancelButton {
-    padding: 10px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #212529;
+    padding: 8px 16px;
+    font-size: 16px;
     background-color: #f8f9fa;
+    color: #212529;
     border: 1px solid #ced4da;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
 .cancelButton:hover {
-    background-color: #e9ecef;
+    background-color: #e2e6ea;
+}
+
+.error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
 }

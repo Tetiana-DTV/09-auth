@@ -1,183 +1,127 @@
-'use client';
+"use client"
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
-import css from './NoteForm.module.css';
-import {
-  createNote,
-  getCategories,
-  type CreateNoteBody,
-  type NoteCategory,
-} from '@/lib/api/clientApi';
-import { getErrorMessage } from '@/lib/errors';
-import type { NoteTag } from '@/types/note';
-import { useNoteDraftStore, initialDraft, type NoteDraft } from '@/lib/store/noteStore';
+// import * as Yup from "yup";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createNote } from "@/lib/api/clientApi";
+import css from "./NoteForm.module.css";
+import { useRouter } from "next/navigation";
+import { useNoteDraftStore } from "@/lib/store/noteStore";
 
-const FALLBACK_TAGS: readonly NoteTag[] = ['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as const;
-const MIN_TITLE_LENGTH = 3;
 
-interface NoteFormProps {
-  categories?: NoteCategory[];
+
+
+type FormValues = {
+    title: string;
+    content: string;
+    tag: string;
 }
 
-export default function NoteForm({ categories }: NoteFormProps) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { draft, setDraft, clearDraft } = useNoteDraftStore();
-  const [availableCategories, setAvailableCategories] = useState<NoteCategory[]>(categories ?? []);
 
-  const fallbackCategories = useMemo<NoteCategory[]>(
-    () => FALLBACK_TAGS.map((tag) => ({ id: tag.toLowerCase(), name: tag })),
-    []
-  );
+// const validationSchema = Yup.object({
+//     title: Yup.string()
+//         .min(3, "Title must be at least 3 characters")
+//         .max(50, "Title is too long")
+//         .required("Title is required"),
+//     content: Yup.string().max(500),
+//     tag: Yup.string()
+//         .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
+//         .required("Please choose a tag"),
+// });
 
-  useEffect(() => {
-    let active = true;
 
-    async function loadCategories() {
-      if (categories?.length) {
-        setAvailableCategories(categories);
-        return;
-      }
+export default function NoteForm() {
 
-      try {
-        const remoteCategories = await getCategories();
-        if (!active) {
-          return;
-        }
-        if (remoteCategories.length) {
-          setAvailableCategories(remoteCategories);
-        } else {
-          setAvailableCategories(fallbackCategories);
-        }
-      } catch {
-        if (active) {
-          setAvailableCategories(fallbackCategories);
-        }
-      }
-    }
+    const queryClient = useQueryClient()
 
-    loadCategories();
+    const { draft, setDraft, clearDraft } = useNoteDraftStore()
 
-    return () => {
-      active = false;
-    };
-  }, [categories, fallbackCategories]);
-
-  const { mutateAsync, isPending } = useMutation({
-    mutationFn: (payload: CreateNoteBody) => createNote(payload),
-    onSuccess: async () => {
-      toast.success('Note created');
-      clearDraft();
-      await queryClient.invalidateQueries({ queryKey: ['notes'] });
-      router.refresh();
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Failed to create note'));
-    },
-  });
-
-  const currentDraft = { ...initialDraft, ...draft };
-
-  const handleChange: React.ChangeEventHandler<
-    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-  > = (event) => {
-    const { name, value } = event.target;
-    setDraft({ [name]: value } as Partial<NoteDraft>);
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const title = currentDraft.title?.trim() ?? '';
-    const content = currentDraft.content?.trim() ?? '';
-    const tag = currentDraft.tag ?? FALLBACK_TAGS[0];
-
-    if (title.length < MIN_TITLE_LENGTH || !content) {
-      toast.error('Please fill in title and content');
-      return;
-    }
-
-    const payload: CreateNoteBody = {
-      title,
-      content,
-      tag,
+    const handleChange = (
+        event: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >,
+    ) => {
+        setDraft({
+            ...draft,
+            [event.target.name]: event.target.value,
+        });
     };
 
-    await mutateAsync(payload);
-  };
+    const router = useRouter()
 
-  const handleCancel = () => {
-    router.back();
-  };
+    const { mutate } = useMutation({
+        mutationFn: createNote,
+        onSuccess: () => {
 
-  const categoriesToRender = availableCategories.length
-    ? availableCategories
-    : fallbackCategories;
+            queryClient.invalidateQueries({ queryKey: ["notes"] });
 
-  return (
-    <form className={css.form} onSubmit={handleSubmit}>
-      <div className={css.field}>
-        <label htmlFor="title" className={css.label}>
-          Title
-        </label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          className={css.input}
-          value={currentDraft.title ?? ''}
-          onChange={handleChange}
-          minLength={MIN_TITLE_LENGTH}
-          required
-          placeholder="Enter title"
-        />
-      </div>
+            clearDraft()
+            router.push('/notes/filter/all');
+        },
+    })
 
-      <div className={css.field}>
-        <label htmlFor="content" className={css.label}>
-          Content
-        </label>
-        <textarea
-          id="content"
-          name="content"
-          className={css.textarea}
-          value={currentDraft.content ?? ''}
-          onChange={handleChange}
-          required
-          placeholder="Write your note..."
-        />
-      </div>
 
-      <div className={css.field}>
-        <label htmlFor="tag" className={css.label}>
-          Tag
-        </label>
-        <select
-          id="tag"
-          name="tag"
-          className={css.select}
-          value={currentDraft.tag ?? FALLBACK_TAGS[0]}
-          onChange={handleChange}
-        >
-          {categoriesToRender.map((category) => (
-            <option key={category.id} value={category.name}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
+    const handleSubmit = (formData: FormData) => {
+        const values = Object.fromEntries(formData) as FormValues;
+        console.log(values);
 
-      <div className={css.actions}>
-        <button type="submit" disabled={isPending} className={css.submitButton}>
-          {isPending ? 'Creating…' : 'Create'}
-        </button>
-        <button type="button" onClick={handleCancel} className={css.cancelButton}>
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
+        mutate(values)
+    };
+
+    return (
+
+        <form className={css.form} action={handleSubmit}>
+            <div className={css.formGroup}>
+                <label >Title
+                    <input id="title" name="title" type="text"
+                        className={css.input}
+                        defaultValue={draft?.title} onChange={handleChange} />
+                </label>
+            </div>
+
+            <div className={css.formGroup}>
+                <label >Content
+                    <textarea
+                        id="content"
+                        name="content"
+                        rows={8}
+                        className={css.textarea}
+                        defaultValue={draft?.content}
+                        onChange={handleChange}
+                    />
+                </label>
+            </div>
+
+            <div className={css.formGroup}>
+                <label >Tag
+                    <select id="tag" name="tag"
+                        className={css.select}
+                        defaultValue={draft?.tag}
+                        onChange={handleChange}>
+                        <option value="">Choose tag..</option>
+                        <option value="Todo">Todo</option>
+                        <option value="Work">Work</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Shopping">Shopping</option>
+                    </select>
+                </label>
+            </div>
+
+            <div className={css.actions}>
+                <button
+                    type="button"
+                    className={css.cancelButton}
+                    onClick={() => { router.push('/notes/filter/all') }}
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    className={css.submitButton}
+                >
+                    Create note +
+                </button>
+            </div>
+        </form>
+    );
 }

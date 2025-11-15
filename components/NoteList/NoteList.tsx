@@ -1,52 +1,38 @@
-'use client';
+import css from './NoteList.module.css'
+import type { Note } from '../../types/note'
+import { deleteNote } from '@/lib/api/clientApi'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 
-import Link from 'next/link';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import css from './NoteList.module.css';
-import type { Note } from '@/types/note';
-import { deleteNote } from '@/lib/api/clientApi';
-import { toast } from 'react-hot-toast';
-import { getErrorMessage } from '@/lib/errors';
 
-export interface NoteListProps {
-  notes: Note[];
+interface NoteListProps {
+    notes: Note[]
 }
 
 export default function NoteList({ notes }: NoteListProps) {
-  const qc = useQueryClient();
+    const queryClient = useQueryClient()
+    const mutation = useMutation({
+        mutationFn: (id: string) => deleteNote(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["notes"] });
+        },
+    })
 
-  const del = useMutation({
-    mutationFn: (id: string) => deleteNote(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['notes'] });
-      toast.success('Note deleted');
-    },
-    onError: (err) => {
-      toast.error(getErrorMessage(err, 'Failed to delete note'));
-    },
-  });
+    return (
+        <ul className={css.list}>
+            {notes.map(note => (
+                <li key={note.id} className={css.listItem}>
+                    <h2 className={css.title}>{note.title}</h2>
+                    <p className={css.content}>{note.content}</p>
+                    <div className={css.footer}>
+                        <span className={css.tag}>{note.tag}</span>
+                        <Link href={`/notes/${note.id}`} className={css.link}>View details</Link>
+                        <button className={css.button} onClick={() => { mutation.mutate(note.id) }}>Delete</button>
+                    </div>
+                </li>
+            ))}
 
-  return (
-    <ul className={css.list}>
-      {notes.map((n) => (
-        <li key={n.id} className={css.listItem}>
-          <h2 className={css.title}>{n.title}</h2>
-          <p className={css.content}>{n.content ?? ''}</p>
-          <div className={css.footer}>
-            <span className={css.tag}>{n.tag}</span>
-            <Link prefetch={false} className={css.link} href={`/notes/${n.id}`}>
-              View details
-            </Link>
-            <button
-              className={css.button}
-              onClick={() => del.mutate(n.id)}
-              disabled={del.isPending}
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
+        </ul>
+
+    )
 }

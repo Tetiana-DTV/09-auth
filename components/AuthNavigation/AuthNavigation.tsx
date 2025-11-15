@@ -1,55 +1,56 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import styles from '@/app/styles/AuthNavigation.module.css';
-import { logout } from '@/lib/api/clientApi';
-import { useAuthStore } from '@/lib/store/authStore';
 
-export default function AuthNavigation() {
-  const router = useRouter();
-  const { user, isAuthenticated, clearIsAuthenticated } = useAuthStore();
+import { useAuthStore } from '@/lib/store/authStore'
+import css from './AuthNavigation.module.css'
+import Link from "next/link"
+import { useRouter } from 'next/navigation'
+import { logout } from '@/lib/api/clientApi'
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } finally {
-      clearIsAuthenticated();
-      router.push('/sign-in');
-      router.refresh();
-    }
-  };
 
-  if (!isAuthenticated) {
-    return (
-      <>
-        <li className={styles.navigationItem}>
-          <Link prefetch={false} href="/sign-in" className={styles.navigationLink}>
-            Login
-          </Link>
-        </li>
-        <li className={styles.navigationItem}>
-          <Link prefetch={false} href="/sign-up" className={styles.navigationLink}>
-            Sign up
-          </Link>
-        </li>
-      </>
+export const AuthNavigation = () => {
+
+    const router = useRouter()
+    const { isAuthenticated, user } = useAuthStore();
+    const clearIsAuthenticated = useAuthStore(
+        (state) => state.clearIsAuthenticated,
     );
-  }
 
-  return (
-    <>
-      <li className={styles.navigationItem}>
-        <Link prefetch={false} href="/profile" className={styles.navigationLink}>
-          Profile
-        </Link>
-      </li>
-      <li className={styles.navigationItem}>
-        <p className={styles.userEmail}>{user?.email ?? 'User email'}</p>
-        <button type="button" className={styles.logoutButton} onClick={handleLogout}>
-          Logout
-        </button>
-      </li>
-    </>
-  );
+    const handleLogout = async () => {
+
+        await logout()
+        clearIsAuthenticated()
+        router.push('/sign-in')
+    }
+
+    return isAuthenticated ? (
+        <ul >
+            <li className={css.navigationItem}>
+                <Link href="/profile" prefetch={false} className={css.navigationLink}>
+                    Profile
+                </Link>
+            </li>
+            <li className={css.navigationItem}>
+                <p className={css.userEmail}>{user?.email}</p>
+                <button className={css.logoutButton} onClick={handleLogout}>
+                    Logout
+                </button>
+            </li>
+        </ul>) : (
+        <ul >
+            <li className={css.navigationItem}>
+                <Link href="/sign-in" prefetch={false} className={css.navigationLink}>
+                    Login
+                </Link>
+            </li>
+            <li className={css.navigationItem}>
+                <Link href="/sign-up" prefetch={false} className={css.navigationLink}>
+                    Sign up
+                </Link>
+            </li>
+        </ul>
+
+
+    )
+
 }

@@ -1,47 +1,74 @@
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import styles from '@/app/styles/ProfilePage.module.css';
-import { getMe } from '@/lib/api/serverApi';
+
+
+import Link from 'next/link'
+import css from './ProfilePage.module.css'
+import { getServerMe } from '@/lib/api/serverApi'
+import Image from 'next/image'
+import { Metadata } from 'next'
+
 
 export const metadata: Metadata = {
-  title: 'Profile Page · NoteHub',
-  description: 'Profile details for the authenticated NoteHub user.',
-  openGraph: {
-    title: 'Profile Page · NoteHub',
-    description: 'Profile details for the authenticated NoteHub user.',
-    url: '/profile',
-  },
+    title: "Profile",
+    description: "Change your profile",
+    openGraph: {
+        title: "Profile",
+        description: "Change your profile",
+        url: 'https://09-auth-nine-jet.vercel.app/',
+        images: [
+            {
+                url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+                width: 1200,
+                height: 630,
+                alt: "Profile"
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: "Profile",
+        description: "Change your profile",
+        images: ['https://ac.goit.global/fullstack/react/notehub-og-meta.jpg'],
+    },
 };
 
-export default async function ProfilePage() {
-  const user = await getMe();
-  if (!user) {
-    redirect('/sign-in');
-  }
 
-  const username = user.username ?? 'your_username';
-  const email = user.email ?? 'your_email@example.com';
-  const avatar = user.avatar ?? '/icon.svg';
+const ProfilePage = async () => {
+    const res = await getServerMe()
 
-  return (
-    <main className={styles.mainContent}>
-      <div className={styles.profileCard}>
-        <div className={styles.header}>
-          <h1 className={styles.formTitle}>Profile Page</h1>
-          <Link prefetch={false} href="/profile/edit" className={styles.editProfileButton}>
-            Edit Profile
-          </Link>
-        </div>
-        <div className={styles.avatarWrapper}>
-          <Image src={avatar} alt="User Avatar" width={120} height={120} className={styles.avatar} />
-        </div>
-        <div className={styles.profileInfo}>
-          <p>Username: {username}</p>
-          <p>Email: {email}</p>
-        </div>
-      </div>
-    </main>
-  );
+
+
+    return (
+        <>
+            <main className={css.mainContent}>
+                <div className={css.profileCard}>
+                    <div className={css.header}>
+                        <h1 className={css.formTitle}>Profile Page</h1>
+                        <Link href="/profile/edit" className={css.editProfileButton}>
+                            Edit Profile
+                        </Link>
+                    </div>
+                    <div className={css.avatarWrapper}>
+                        {res.avatar && <Image
+                            src={res.avatar}
+                            alt="User Avatar"
+                            width={120}
+                            height={120}
+                            className={css.avatar}
+                        />}
+                    </div>
+                    <div className={css.profileInfo}>
+                        <p>
+
+                            Username: {res.username}
+                        </p>
+                        <p>
+                            Email: {res.email}
+                        </p>
+                    </div>
+                </div>
+            </main>
+
+        </>
+    )
 }
+export default ProfilePage

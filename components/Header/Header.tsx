@@ -1,29 +1,25 @@
-'use client';
-import Link from 'next/link';
-import css from './Header.module.css';
-import TagsMenu from '@/components/TagsMenu/TagsMenu';
-import AuthNavigation from '@/components/AuthNavigation/AuthNavigation';
+import css from './Header.module.css'
+import Link from 'next/link'
+import { AuthNavigation } from '../AuthNavigation/AuthNavigation'
 
-export default function Header() {
-  return (
-    <header className={css.header}>
-      <Link prefetch={false} href="/" aria-label="Home" className={css.headerLink}>
+const Header = () => (<header className={css.header}>
+    <Link href="/" aria-label="Home">
         NoteHub
-      </Link>
-
-      <nav aria-label="Main Navigation">
+    </Link>
+    <nav aria-label="Main Navigation">
         <ul className={css.navigation}>
-          <li className={css.navigationItem}>
-            <Link prefetch={false} href="/" className={css.navigationLink}>
-              Home
-            </Link>
-          </li>
-          <li className={css.navigationItem}>
-            <TagsMenu />
-          </li>
-          <AuthNavigation />
+            <li>
+                <Link href="/">Home</Link>
+            </li>
+            <li>
+                <Link href="/notes/filter/all">Notes</Link>
+                {/* <TagsMenu /> */}
+            </li>
+            <li>
+                <AuthNavigation />
+            </li>
         </ul>
-      </nav>
-    </header>
-  );
-}
+    </nav>
+</header>)
+
+export default Header

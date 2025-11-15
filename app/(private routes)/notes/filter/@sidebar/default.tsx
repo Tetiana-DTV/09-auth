@@ -1,30 +1,24 @@
-import Link from 'next/link';
-import { getCategoriesServer } from '@/lib/api/serverApi';
-import css from './SidebarNotes.module.css';
+import Link from 'next/link'
+import css from './SidebarNotes.module.css'
 
-const TAGS = ['All', 'Todo', 'Work', 'Personal', 'Meeting', 'Shopping'] as const;
+export default function SidebarNotes() {
 
-export default async function SidebarNotes() {
-  const categories = await getCategoriesServer();
+    const tags = ['all', 'Work', 'Personal', 'Meeting', 'Shopping', 'Ideas', 'Travel', 'Finance', 'Health', 'Important', 'Todo',]
 
-  return (
-    <nav aria-label="Filter notes by tag">
-      <Link prefetch={false} href="/notes/action/create" className={css.menuLink}>
-        Create note
-      </Link>
-      <ul className={css.menuList}>
-        {TAGS.map((tag) => (
-          <li key={tag} className={css.menuItem}>
-            <Link
-              prefetch={false}
-              href={`/notes/filter/${encodeURIComponent(tag)}`}
-              className={css.menuLink}
+    return (
+        <aside >
+            <ul className={css.menuList}
             >
-              {tag === 'All' ? 'All notes' : tag}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
+
+                {tags.map(tag => (
+                    <li key={tag} className={css.menuItem}
+                    >
+                        <Link href={`/notes/filter/${tag}`} className={css.menuLink}>
+                            {tag}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </aside>
+    )
 }

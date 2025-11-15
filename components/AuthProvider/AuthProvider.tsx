@@ -1,94 +1,44 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { checkSession, getUser, logout } from '@/lib/api/clientApi';
-import { useAuthStore } from '@/lib/store/authStore';
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/lib/store/authStore";
+import { getMe, checkSession } from "@/lib/api/clientApi";
 
-const PRIVATE_PREFIXES = ['/profile', '/notes'];
+type Props = {
+  children: React.ReactNode;
+};
 
-function isPrivateRoute(pathname: string): boolean {
-  return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export default function AuthProvider({ children }: AuthProviderProps) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
+const AuthProvider = ({ children }: Props) => {
+  const setUser = useAuthStore((state) => state.setUser);
   const clearIsAuthenticated = useAuthStore((state) => state.clearIsAuthenticated);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const [isChecking, setIsChecking] = useState(true);
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function handleUnauthorized() {
-      clearIsAuthenticated();
-      if (!isPrivateRoute(pathname)) {
-        return;
-      }
-
+    const fetchUser = async () => {
       try {
-        await logout();
-      } catch {
-        // ignore network errors during best-effort logout
-      }
-
-      if (!cancelled) {
-        router.replace('/sign-in');
-      }
-    }
-
-    async function verifySession() {
-      setIsChecking(true);
-
-      try {
-        const hasSession = await checkSession();
-        if (cancelled) {
-          return;
+        const isAuthenticated = await checkSession();
+        if (isAuthenticated) {
+          const user = await getMe();
+          if (user) setUser(user);
+        } else {
+          clearIsAuthenticated();
         }
-
-        if (!hasSession) {
-          await handleUnauthorized();
-          return;
-        }
-
-        const user = await getUser();
-        if (cancelled) {
-          return;
-        }
-
-        setAuthenticated(user);
-      } catch {
-        if (!cancelled) {
-          await handleUnauthorized();
-        }
+      } catch (error) {
+        clearIsAuthenticated();
       } finally {
-        if (!cancelled) {
-          setIsChecking(false);
-        }
+        setLoading(false);
       }
-    }
-
-    verifySession();
-
-    return () => {
-      cancelled = true;
     };
-  }, [pathname, router, setAuthenticated, clearIsAuthenticated]);
+    fetchUser();
+  }, [setUser, clearIsAuthenticated]);
 
-  if (isChecking) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>Checking session…</div>;
-  }
-
-  if (!isAuthenticated && isPrivateRoute(pathname)) {
-    return null;
+  if (loading) {
+    // Можна показати spinner або просто нічого
+    return <div>Loading...</div>;
   }
 
   return <>{children}</>;
-}
+};
+
+export default AuthProvider;
