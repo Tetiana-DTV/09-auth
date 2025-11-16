@@ -1,42 +1,45 @@
 'use client'
 
-
+import css from './SignUpPage.module.css'
+import { register } from '@/lib/api/clientApi'
 import { registerRequest } from '@/lib/api/clientApi'
-import css from './SignInPage.module.css'
-import { login } from '@/lib/api/clientApi'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
 import { useAuthStore } from '@/lib/store/authStore'
+import { useState } from 'react'
+import { AxiosError } from 'axios'
 
 
-const Login = () => {
-    const setUser = useAuthStore((state) => state.setUser)
+
+const Register = () => {
+
+    const [error, setError] = useState<string | null>(null)
 
     const router = useRouter()
-    const [error, setError] = useState('')
 
+    const setUser = useAuthStore((state) => state.setUser)
 
     const handleSubmit = async (formData: FormData) => {
+        setError(null)
+        const formValues = Object.fromEntries(formData) as registerRequest
         try {
-            const formValue = Object.fromEntries(formData) as registerRequest
-            const res = await login(formValue)
+            const res = await register(formValues)
             if (res) {
                 setUser(res)
                 router.push('/profile')
             }
-        } catch {
-            setError(
-                'Oops... some error'
-            )
         }
+        catch (e) {
+            const err = e as AxiosError<{ message?: string }>
+            setError(err.response?.data?.message ?? 'Something went wrong')
+        }
+
 
     }
 
     return (
         <main className={css.mainContent}>
+            <h1 className={css.formTitle}>Sign up</h1>
             <form className={css.form} action={handleSubmit}>
-                <h1 className={css.formTitle}>Sign in</h1>
-
                 <div className={css.formGroup}>
                     <label htmlFor="email">Email</label>
                     <input id="email" type="email" name="email" className={css.input} required />
@@ -49,14 +52,14 @@ const Login = () => {
 
                 <div className={css.actions}>
                     <button type="submit" className={css.submitButton}>
-                        Log in
+                        Register
                     </button>
                 </div>
 
-                <p className={css.error}>{error}</p>
+                {error && <p className={css.error}>{error}</p>}
             </form>
         </main>
 
     )
 }
-export default Login
+export default Register
